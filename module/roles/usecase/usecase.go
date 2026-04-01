@@ -3,15 +3,15 @@ package usecase
 import (
 
 	// Note: Previous `cmd/serve.go` used `github.com/beruang/framework/common/logger`.
-	// But `templates` used `yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/helper` for trace ID and `zerolog` for logging.
+	// But `templates` used `github.com/albert-upert/template-backend-utils-libraries/helper` for trace ID and `zerolog` for logging.
 	// I should be consistent with the detected `cmd/serve.go` or `rules`.
 	// The `rules` say "MUST use zerolog". `github.com/beruang/framework/common/logger` is likely a wrapper.
 	// `templates` use `zerolog.Ctx(ctx)`. I will use `zerolog` and `otel`.
 	// Also need domain package.
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 var _ domain.UseCase = (*UseCase)(nil)

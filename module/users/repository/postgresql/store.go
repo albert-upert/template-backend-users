@@ -3,8 +3,8 @@ package postgresql
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
 	"github.com/jackc/pgx/v5"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
 )
 
 var queryStore = `

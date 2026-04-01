@@ -1,12 +1,12 @@
 package roles
 
 import (
+	"github.com/albert-upert/template-backend-users/module/roles/delivery/http"
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-users/module/roles/repository/postgresql"
+	"github.com/albert-upert/template-backend-users/module/roles/usecase"
 	gofiber "github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/delivery/http"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/repository/postgresql"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/usecase"
 )
 
 // Module exports the roles module for Fx.

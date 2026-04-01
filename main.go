@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/cmd"
+	"github.com/albert-upert/template-backend-users/cmd"
 )
 
 func main() {

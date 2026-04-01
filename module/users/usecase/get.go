@@ -4,10 +4,10 @@ import (
 	"context"
 	errs "errors"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
 )
 
 // Get retrieves a user by ID.

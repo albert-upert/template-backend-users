@@ -1,10 +1,10 @@
 package usecase
 
 import (
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/idp"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
 )
 
 var _ domain.UseCase = (*UseCase)(nil)

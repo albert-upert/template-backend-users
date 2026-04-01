@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp"
+	"github.com/albert-upert/template-backend-utils-libraries/idp"
 )
 
 // University represents the university settings for redirect.

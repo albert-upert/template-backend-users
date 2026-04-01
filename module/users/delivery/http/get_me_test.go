@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
 )
 
 // MockUseCase is a mock for domain.UseCase

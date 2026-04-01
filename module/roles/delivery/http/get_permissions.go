@@ -4,11 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
+	"github.com/albert-upert/template-backend-utils-libraries/responses"
+	"github.com/albert-upert/template-backend-utils-libraries/types"
 	"github.com/gofiber/fiber/v2"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/responses"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/types"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 type (

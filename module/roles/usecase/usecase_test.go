@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-users/module/roles/usecase"
+	"github.com/albert-upert/template-backend-users/tests/mocks"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/usecase"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/tests/mocks"
 )
 
 func TestUseCase_Roles(t *testing.T) {

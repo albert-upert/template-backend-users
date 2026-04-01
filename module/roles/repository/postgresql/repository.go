@@ -3,9 +3,9 @@ package postgresql
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 var _ domain.RoleRepository = (*Repository)(nil)

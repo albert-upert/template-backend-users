@@ -3,11 +3,11 @@ package http
 import (
 	"net/http"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
+	"github.com/albert-upert/template-backend-utils-libraries/responses"
 	"github.com/gofiber/fiber/v2"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/responses"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 // RoleHandler handles HTTP requests for roles module.

@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
 	"github.com/rs/zerolog"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
 )
 
 // SyncUser performs user synchronization using external IDP.

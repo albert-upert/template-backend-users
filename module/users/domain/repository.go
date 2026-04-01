@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/types"
+	"github.com/albert-upert/template-backend-utils-libraries/types"
 )
 
 // User represents the domain user entity.

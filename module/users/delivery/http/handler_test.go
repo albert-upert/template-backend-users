@@ -8,14 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	deliverhttp "github.com/albert-upert/template-backend-users/module/users/delivery/http"
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-users/tests/mocks"
+	liberrors "github.com/albert-upert/template-backend-utils-libraries/errors"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	liberrors "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	deliverhttp "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/delivery/http"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/tests/mocks"
 )
 
 func setupUserApp(useCase domain.UseCase) *fiber.App {

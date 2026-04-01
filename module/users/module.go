@@ -1,12 +1,12 @@
 package users
 
 import (
+	"github.com/albert-upert/template-backend-users/module/users/delivery/http"
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-users/module/users/repository/postgresql"
+	"github.com/albert-upert/template-backend-users/module/users/usecase"
 	gofiber "github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/delivery/http"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/repository/postgresql"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/usecase"
 )
 
 // Module exports the users module for Fx.

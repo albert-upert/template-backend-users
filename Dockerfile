@@ -23,10 +23,10 @@ ARG BRANCH=unknown
 ARG BUILD_TIME=unknown
 
 RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags "-X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.Version=${VERSION}' \
-              -X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.Commit=${COMMIT}' \
-              -X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.Branch=${BRANCH}' \
-              -X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.BuildTime=${BUILD_TIME}'" \
+    -ldflags "-X 'github.com/albert-upert/template-backend-users/version.Version=${VERSION}' \
+    -X 'github.com/albert-upert/template-backend-users/version.Commit=${COMMIT}' \
+    -X 'github.com/albert-upert/template-backend-users/version.Branch=${BRANCH}' \
+    -X 'github.com/albert-upert/template-backend-users/version.BuildTime=${BUILD_TIME}'" \
     -o /go-users main.go
 
 # Stage 2: Run

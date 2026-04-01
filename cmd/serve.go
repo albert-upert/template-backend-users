@@ -1,20 +1,20 @@
 package cmd
 
 import (
+	internalConfig "github.com/albert-upert/template-backend-users/config"
+	"github.com/albert-upert/template-backend-users/module/redirect"
+	"github.com/albert-upert/template-backend-users/module/roles"
+	"github.com/albert-upert/template-backend-users/module/users"
+	"github.com/albert-upert/template-backend-utils-framework/common/logger"
+	"github.com/albert-upert/template-backend-utils-framework/config"
+	"github.com/albert-upert/template-backend-utils-framework/fiber"
+	"github.com/albert-upert/template-backend-utils-framework/otel"
+	"github.com/albert-upert/template-backend-utils-framework/postgres"
+	"github.com/albert-upert/template-backend-utils-framework/redis"
+	"github.com/albert-upert/template-backend-utils-libraries/idp"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
 	"github.com/spf13/cobra"
 	"go.uber.org/fx"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/framework/common/logger"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/framework/config"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/framework/fiber"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/framework/otel"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/framework/postgres"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/framework/redis"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	internalConfig "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/config"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users"
 )
 
 var serve = &cobra.Command{

@@ -3,10 +3,10 @@ package postgresql
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
 )
 
 type Repository struct {

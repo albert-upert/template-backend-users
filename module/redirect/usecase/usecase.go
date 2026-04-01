@@ -4,13 +4,13 @@ import (
 	"context"
 	"time"
 
+	"github.com/albert-upert/template-backend-users/config"
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
+	"github.com/albert-upert/template-backend-utils-libraries/idp"
+	"github.com/albert-upert/template-backend-utils-libraries/types"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/types"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/config"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
 )
 
 var _ domain.RedirectUseCase = (*UseCase)(nil)

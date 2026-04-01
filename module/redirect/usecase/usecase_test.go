@@ -5,14 +5,14 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/albert-upert/template-backend-users/config"
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
+	"github.com/albert-upert/template-backend-users/module/redirect/usecase"
+	"github.com/albert-upert/template-backend-users/tests/mocks"
+	"github.com/albert-upert/template-backend-utils-libraries/idp"
+	"github.com/albert-upert/template-backend-utils-libraries/idp/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp/client"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/config"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/usecase"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/tests/mocks"
 )
 
 func TestUseCase_Redirect(t *testing.T) {

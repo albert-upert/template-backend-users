@@ -1,12 +1,12 @@
 package redirect
 
 import (
+	"github.com/albert-upert/template-backend-users/module/redirect/delivery/http"
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
+	"github.com/albert-upert/template-backend-users/module/redirect/repository/postgresql"
+	"github.com/albert-upert/template-backend-users/module/redirect/usecase"
 	"github.com/gofiber/fiber/v2"
 	"go.uber.org/fx"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/delivery/http"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/repository/postgresql"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/usecase"
 )
 
 var Module = fx.Module(

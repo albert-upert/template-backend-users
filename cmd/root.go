@@ -3,8 +3,8 @@ package cmd
 import (
 	"os"
 
+	"github.com/albert-upert/template-backend-users/version"
 	"github.com/spf13/cobra"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version"
 )
 
 var root = &cobra.Command{

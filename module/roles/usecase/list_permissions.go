@@ -3,9 +3,9 @@ package usecase
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
 	"github.com/rs/zerolog"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 // ListPermissions retrieves a list of permissions based on filter criteria.

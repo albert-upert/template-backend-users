@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/responses"
 	"github.com/gofiber/fiber/v2"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/responses"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
 )
 
 type RedirectHandler struct {

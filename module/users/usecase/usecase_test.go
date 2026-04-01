@@ -5,12 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	"github.com/albert-upert/template-backend-users/module/users/usecase"
+	"github.com/albert-upert/template-backend-users/tests/mocks"
+	"github.com/albert-upert/template-backend-utils-libraries/idp/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp/client"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/usecase"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/tests/mocks"
 )
 
 func TestUseCase_Users(t *testing.T) {

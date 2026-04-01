@@ -3,8 +3,8 @@ package usecase
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
 	"github.com/rs/zerolog"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
 )
 
 // UpdateStatus updates a user's status.

@@ -4,11 +4,11 @@ import (
 	"context"
 	"testing"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
+	usersRepo "github.com/albert-upert/template-backend-users/module/users/repository/postgresql"
+	libtypes "github.com/albert-upert/template-backend-utils-libraries/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	libtypes "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/types"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
-	usersRepo "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/repository/postgresql"
 )
 
 func TestUsersRepository(t *testing.T) {

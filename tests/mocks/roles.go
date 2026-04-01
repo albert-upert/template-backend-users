@@ -3,8 +3,8 @@ package mocks
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 // RolesUseCaseMock is a mock for Roles UseCase

@@ -3,9 +3,9 @@ package postgresql
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-utils-libraries/object"
 	"github.com/jackc/pgx/v5"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/object"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
 )
 
 var queryFindById = `

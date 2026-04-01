@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
+	redirectRepo "github.com/albert-upert/template-backend-users/module/redirect/repository/postgresql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
-	redirectRepo "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/repository/postgresql"
 )
 
 func TestRedirectRepository(t *testing.T) {

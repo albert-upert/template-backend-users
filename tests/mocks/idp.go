@@ -3,8 +3,8 @@ package mocks
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-utils-libraries/idp/client"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/idp/client"
 )
 
 // IDPProviderMock mocks the IDP provider

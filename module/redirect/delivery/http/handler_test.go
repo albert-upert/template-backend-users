@@ -6,11 +6,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	deliverhttp "github.com/albert-upert/template-backend-users/module/redirect/delivery/http"
+	"github.com/albert-upert/template-backend-users/tests/mocks"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	deliverhttp "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/delivery/http"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/tests/mocks"
 )
 
 func TestRedirectHandler_Redirect(t *testing.T) {

@@ -3,8 +3,8 @@ package mocks
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/users/domain"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/users/domain"
 )
 
 // UsersUseCaseMock is a mock for Users UseCase

@@ -3,10 +3,10 @@ package http
 import (
 	"net/http"
 
+	"github.com/albert-upert/template-backend-utils-libraries/errors"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
+	"github.com/albert-upert/template-backend-utils-libraries/responses"
 	"github.com/gofiber/fiber/v2"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/errors"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/responses"
 )
 
 type (

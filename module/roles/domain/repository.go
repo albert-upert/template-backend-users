@@ -3,7 +3,7 @@ package domain
 import (
 	"context"
 
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/types"
+	"github.com/albert-upert/template-backend-utils-libraries/types"
 )
 
 // Role represents the domain object for a Role.

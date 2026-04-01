@@ -8,13 +8,13 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	deliverhttp "github.com/albert-upert/template-backend-users/module/roles/delivery/http"
+	"github.com/albert-upert/template-backend-users/module/roles/domain"
+	"github.com/albert-upert/template-backend-users/tests/mocks"
+	"github.com/albert-upert/template-backend-utils-libraries/middleware"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/libraries/middleware"
-	deliverhttp "yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/delivery/http"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/roles/domain"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/tests/mocks"
 )
 
 func setupRoleApp(useCase domain.UseCase) *fiber.App {

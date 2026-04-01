@@ -11,10 +11,10 @@ COMMIT ?= $(shell git rev-parse --short HEAD || echo "none")
 BRANCH ?= $(shell git rev-parse --abbrev-ref HEAD || echo "unknown")
 BUILD_TIME ?= $(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
 
-LDFLAGS := -ldflags "-X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.Version=$(VERSION)' \
-                     -X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.Commit=$(COMMIT)' \
-                     -X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.Branch=$(BRANCH)' \
-                     -X 'yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/version.BuildTime=$(BUILD_TIME)'"
+LDFLAGS := -ldflags "-X 'github.com/albert-upert/template-backend-users/version.Version=$(VERSION)' \
+                     -X 'github.com/albert-upert/template-backend-users/version.Commit=$(COMMIT)' \
+                     -X 'github.com/albert-upert/template-backend-users/version.Branch=$(BRANCH)' \
+                     -X 'github.com/albert-upert/template-backend-users/version.BuildTime=$(BUILD_TIME)'"
 
 build:
 	go build $(LDFLAGS) -o bin/$(APP_NAME) main.go

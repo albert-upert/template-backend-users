@@ -3,8 +3,8 @@ package mocks
 import (
 	"context"
 
+	"github.com/albert-upert/template-backend-users/module/redirect/domain"
 	"github.com/stretchr/testify/mock"
-	"yuhuu.universitaspertamina.ac.id/siak/siakup/backend/user/module/redirect/domain"
 )
 
 // RedirectUseCaseMock is a mock for RedirectUseCase
