@@ -1,0 +1,521 @@
+openapi: 3.0.0
+info:
+  title: IAM Service API
+  description: API documentation for the Identity and Access Management (IAM) service, covering Redirect, Roles, and Users modules.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Response:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        data:
+          type: object
+          nullable: true
+        meta:
+          $ref: '#/components/schemas/Meta'
+        error:
+          $ref: '#/components/schemas/Error'
+
+    Meta:
+      type: object
+      properties:
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+        total_pages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+
+    # Domain Schemas
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        institution_id:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+
+    UserRoleAssignment:
+      type: object
+      properties:
+        role_id:
+          type: string
+        role_name:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+        institution_id:
+          type: string
+        external_subject:
+          type: string
+        status:
+          type: string
+        metadata:
+          type: object
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserRoleAssignment'
+        groups:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    # Requests
+    CreateRoleRequest:
+      type: object
+      required:
+        - name
+        - permissions
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    UpdateRoleRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+
+    SyncUserRequest:
+      type: object
+      required:
+        - access_token
+      properties:
+        access_token:
+          type: string
+
+    UpdateUserStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [active, inactive]
+
+    AssignRoleRequest:
+      type: object
+      required:
+        - roles
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+
+security:
+  - bearerAuth: []
+
+paths:
+  # Health Module
+  /health/livez:
+    get:
+      summary: Liveness Probe
+      description: Check if the application is running. Used by Kubernetes to restart the container if it hangs.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Application is alive.
+  
+  /health/readyz:
+    get:
+      summary: Readiness Probe
+      description: Check if the application is ready to accept traffic. Checks database and cache connectivity.
+      tags:
+        - Health
+      security: []
+      responses:
+        '200':
+          description: Application is ready.
+        '503':
+          description: Application is not ready (dependency failure).
+
+  # Redirect Module
+  /redirect/{institution_id}:
+    get:
+      summary: Handle IDP Redirect
+      description: Handles the redirect flow from an Identity Provider. Validates the token, creates a session, and redirects the user.
+      tags:
+        - Redirect
+      security: [] # Public endpoint
+      parameters:
+        - in: path
+          name: institution_id
+          schema:
+            type: string
+          required: true
+          description: ID of the institution
+        - in: query
+          name: token
+          schema:
+            type: string
+          required: true
+          description: IDP access token
+      responses:
+        '302':
+          description: Redirects to the institution's configured dashboard URL with a session cookie.
+        '400':
+          description: Bad Request (missing params)
+        '403':
+          description: Forbidden (invalid token)
+        '404':
+          description: Not Found (institution or user)
+
+  # Roles Module
+  /roles:
+    get:
+      summary: List Roles
+      tags:
+        - Roles
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: query
+          schema:
+            type: string
+          description: Search term for role name
+      responses:
+        '200':
+          description: List of roles with pagination
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Role'
+
+    post:
+      summary: Create Role
+      tags:
+        - Roles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Role created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Role'
+
+  /roles/{id}:
+    get:
+      summary: Get Role by ID
+      tags:
+        - Roles
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role details
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Role'
+    put:
+      summary: Update Role
+      tags:
+        - Roles
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoleRequest'
+      responses:
+        '200':
+          description: Role updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Role'
+    delete:
+      summary: Delete Role
+      tags:
+        - Roles
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Role deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+  /roles/permissions:
+    get:
+      summary: List Permissions
+      tags:
+        - Roles
+      responses:
+        '200':
+          description: List of available permissions
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Permission'
+
+  # Users Module
+  /users/me:
+    get:
+      summary: Get Current User Profile
+      description: Retrieve the profile and authorization details of the currently authenticated user.
+      tags:
+        - Users
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/Me'
+
+  /users:
+    get:
+      summary: List Users
+      tags:
+        - Users
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: size
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: query
+          schema:
+            type: string
+          description: Search term for user
+      responses:
+        '200':
+          description: List of users with pagination
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/User'
+
+    post:
+      summary: Sync User
+      description: Synchronize user data using IDP access token.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncUserRequest'
+      responses:
+        '200':
+          description: User synced successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Response'
+                  - properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+  /users/{id}/status:
+    patch:
+      summary: Update User Status
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserStatusRequest'
+      responses:
+        '200':
+          description: User status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'
+
+  /users/{id}/roles:
+    post:
+      summary: Assign Roles to User
+      tags:
+        - Users
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRoleRequest'
+      responses:
+        '200':
+          description: Roles assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Response'

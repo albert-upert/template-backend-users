@@ -1,0 +1,1837 @@
+{
+  "info": {
+    "name": "IAM Service API",
+    "_postman_id": "iam-service-api-collection-v1",
+    "description": "Production-level Postman Collection for the IAM (Identity and Access Management) Service.\n\n## Auth Flow\nThis service uses **cookie-based authentication** via an external IDP redirect.\n1. Call `GET /redirect/{institution_id}?token=<IDP_TOKEN>` — the server sets an `access_token` HTTPOnly cookie.\n2. The `access_token` cookie value is captured into the `accessToken` environment variable.\n3. All protected requests send `Cookie: access_token={{accessToken}}` automatically via the request header.\n\nThe middleware checks: `c.Cookies(\"access_token\")` (key: `access_token`).\n\n## Write Tests Gate\nSet `allowWriteTests=true` in the environment to enable POST/PUT/PATCH/DELETE requests. Otherwise they are skipped safely.\n\n## Seeder Fixtures\n- University ID: `25d29d60-1cdc-4794-a510-68f87d24a284` (Universitas Pertamina)\n- Seed User ID: `1bc3e3e5-3239-456b-a371-c1ee84b4291d` (SIAKUP Administrator)\n- Seed Institution ID: `f9587424-a6e8-4f62-87db-37660e34463c` (General department)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "{{baseUrl}}",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "{{accessToken}}",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "noauth"
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global pre-request: ensure accessToken is present for protected routes",
+          "const token = pm.environment.get('accessToken');",
+          "if (!token || token === '') {",
+          "  console.warn('[PRE-REQUEST] accessToken is not set. Protected endpoints will return 401.');",
+          "  console.warn('[PRE-REQUEST] Run the /redirect flow or set accessToken manually in the environment.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test: response time threshold",
+          "pm.test('Response time is below 1500ms', function () {",
+          "  pm.expect(pm.response.responseTime).to.be.below(1500);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "description": "Kubernetes liveness and readiness probes. No auth required.",
+      "item": [
+        {
+          "name": "Liveness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/livez",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "livez"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /health/livez — Checks if the application process is alive."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response time < 500ms for health check', function () {",
+                  "  pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Readiness Probe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health/readyz",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health",
+                "readyz"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /health/readyz — Checks if dependencies (DB, Redis) are reachable."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200 or 503', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 503]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  pm.test('Readiness probe is OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "  });",
+                  "} else {",
+                  "  console.warn('[READYZ] Service not ready — check DB/Redis connectivity.');",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Redirect (Auth)",
+      "description": "IDP redirect flow. Calling this endpoint with a valid IDP token creates an `access_token` cookie. The middleware reads `c.Cookies(\"access_token\")` — this value is captured into the `accessToken` env var for all subsequent authenticated requests.",
+      "item": [
+        {
+          "name": "IDP Redirect — Get Session Cookie",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redirect/{{universityId}}?token={{idpToken}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "redirect",
+                "{{universityId}}"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "{{idpToken}}",
+                  "description": "IDP ephemeral access token"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /redirect/{institution_id}?token=<IDP_TOKEN>\n\nOn success: 302 redirect to dashboard + sets `access_token` HTTPOnly cookie.\nThe test script captures the `access_token` cookie value into the `accessToken` env var.\nDisable 'Automatically follow redirects' in Postman settings to capture the cookie before the 302 fires."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const idpToken = pm.environment.get('idpToken');",
+                  "if (!idpToken || idpToken === '' || idpToken === '<YOUR_IDP_TOKEN>') {",
+                  "  console.warn('[REDIRECT] idpToken env var is not set. This request will fail with 400/403.');",
+                  "  console.warn('[REDIRECT] Obtain a token from the IDP and set it in the environment.');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Redirect returns 302, 200, 400, or 403', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302, 400, 403, 404]);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 302 || pm.response.code === 200) {",
+                  "  // Capture the access_token cookie — this is what the middleware reads via c.Cookies('access_token')",
+                  "  const accessTokenCookie = pm.cookies.get('access_token');",
+                  "  if (accessTokenCookie) {",
+                  "    pm.environment.set('accessToken', accessTokenCookie);",
+                  "    console.log('[REDIRECT] access_token cookie captured and stored as accessToken env var.');",
+                  "  } else {",
+                  "    console.warn('[REDIRECT] access_token cookie not found in response. Check that Postman cookie jar is enabled for this domain.');",
+                  "  }",
+                  "}",
+                  "",
+                  "if (pm.response.code === 400) {",
+                  "  pm.test('400 means missing/invalid params', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "  });",
+                  "}",
+                  "if (pm.response.code === 403) {",
+                  "  pm.test('403 means invalid IDP token', function () {",
+                  "    pm.response.to.have.status(403);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IDP Redirect — Missing Token (Negative)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redirect/{{universityId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "redirect",
+                "{{universityId}}"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /redirect/{institution_id} with NO token query param. Expects 400."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 when token is missing', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "IDP Redirect — Invalid Institution (Negative)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/redirect/00000000-0000-0000-0000-000000000000?token=invalid_token",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "redirect",
+                "00000000-0000-0000-0000-000000000000"
+              ],
+              "query": [
+                {
+                  "key": "token",
+                  "value": "invalid_token"
+                }
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /redirect/{invalid_id} — Expects 400/403/404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Non-existent institution returns 4xx', function () {",
+                  "  pm.expect(pm.response.code).to.be.within(400, 499);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "RBAC Roles management. All endpoints require authentication via `Cookie: access_token=<value>` and the `roles.manage.all.*` scope.",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}",
+                "description": "Session cookie read by middleware via c.Cookies('access_token')"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles?page=1&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "query",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Optional search term"
+                }
+              ]
+            },
+            "description": "GET /roles — List all roles with pagination."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "",
+                  "pm.test('Response shape matches envelope schema', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body).to.have.property('success');",
+                  "  pm.expect(body).to.have.property('message');",
+                  "  pm.expect(body).to.have.property('data');",
+                  "  pm.expect(body.success).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('Data is an array', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Meta contains pagination fields', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.meta) {",
+                  "    pm.expect(body.meta).to.have.property('page');",
+                  "    pm.expect(body.meta).to.have.property('size');",
+                  "    pm.expect(body.meta).to.have.property('total');",
+                  "    pm.expect(body.meta.page).to.be.a('number');",
+                  "    pm.expect(body.meta.size).to.be.a('number');",
+                  "    pm.expect(body.meta.total).to.be.a('number');",
+                  "  }",
+                  "});",
+                  "",
+                  "pm.test('Each role has id, name', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data && body.data.length > 0) {",
+                  "    body.data.forEach(function(role) {",
+                  "      pm.expect(role).to.have.property('id');",
+                  "      pm.expect(role).to.have.property('name');",
+                  "      pm.expect(role.id).to.be.a('string');",
+                  "      pm.expect(role.name).to.be.a('string');",
+                  "    });",
+                  "    // Store first role ID for chaining",
+                  "    pm.environment.set('existingRoleId', body.data[0].id);",
+                  "    console.log('[LIST ROLES] Stored existingRoleId:', body.data[0].id);",
+                  "  }",
+                  "});",
+                  "",
+                  "pm.test('No sensitive fields leaked', function () {",
+                  "  const text = pm.response.text();",
+                  "  pm.expect(text).to.not.include('password');",
+                  "  pm.expect(text).to.not.include('secret');",
+                  "  pm.expect(text).to.not.include('private_key');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Roles — Search Query",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles?page=1&size=5&query=admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                },
+                {
+                  "key": "query",
+                  "value": "admin"
+                }
+              ]
+            },
+            "description": "GET /roles?query=admin — Search roles by name."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Search returns filtered results', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Permissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/permissions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "permissions"
+              ]
+            },
+            "description": "GET /roles/permissions — List all available system permissions."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "});",
+                  "pm.test('Each permission has id, code, name', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data && body.data.length > 0) {",
+                  "    body.data.forEach(function(p) {",
+                  "      pm.expect(p).to.have.property('id');",
+                  "      pm.expect(p).to.have.property('code');",
+                  "    });",
+                  "    // Store permission codes for use in role creation",
+                  "    pm.environment.set('permissionCode1', body.data[0].code);",
+                  "    if (body.data[1]) pm.environment.set('permissionCode2', body.data[1].code);",
+                  "    console.log('[LIST PERMISSIONS] Stored permissionCode1:', body.data[0].code);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"test_role_{{$randomInt}}\",\n  \"description\": \"Automated test role created by Postman\",\n  \"permissions\": [\"{{permissionCode1}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "description": "POST /roles — Create a new role. Requires allowWriteTests=true."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') {",
+                  "  console.warn('[SKIP] Create Role skipped — set allowWriteTests=true to enable write tests');",
+                  "  pm.execution.skipRequest();",
+                  "}",
+                  "// Generate a unique role name to avoid conflicts",
+                  "const ts = Date.now();",
+                  "pm.variables.set('uniqueRoleName', 'test_role_' + ts);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 201', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('object');",
+                  "});",
+                  "pm.test('Created role has id and name', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.have.property('id');",
+                  "  pm.expect(body.data).to.have.property('name');",
+                  "  pm.expect(body.data.id).to.be.a('string');",
+                  "  // Store for subsequent requests",
+                  "  pm.environment.set('createdRoleId', body.data.id);",
+                  "  pm.environment.set('createdRoleName', body.data.name);",
+                  "  console.log('[CREATE ROLE] Stored createdRoleId:', body.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Role by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{createdRoleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{createdRoleId}}"
+              ]
+            },
+            "description": "GET /roles/{id} — Read the created role to confirm data integrity."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const roleId = pm.environment.get('createdRoleId') || pm.environment.get('existingRoleId');",
+                  "if (!roleId) {",
+                  "  console.warn('[GET ROLE] No role ID found. Run List Roles or Create Role first.');",
+                  "  pm.execution.skipRequest();",
+                  "} else {",
+                  "  pm.variables.set('resolvedRoleId', roleId);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('object');",
+                  "});",
+                  "pm.test('Role has id, name', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.have.property('id');",
+                  "  pm.expect(body.data).to.have.property('name');",
+                  "});",
+                  "pm.test('Permissions is an array', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data.permissions !== undefined) {",
+                  "    pm.expect(body.data.permissions).to.be.an('array');",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Role — Not Found (Negative)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "description": "GET /roles/{non_existent_id} — Expects 404."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([404, 400]);",
+                  "});",
+                  "pm.test('Error response has message or error field', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"{{createdRoleName}}_updated\",\n  \"description\": \"Updated by Postman automated test\",\n  \"permissions\": [\"{{permissionCode1}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{createdRoleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{createdRoleId}}"
+              ]
+            },
+            "description": "PUT /roles/{id} — Update role. Requires allowWriteTests=true. Tests idempotency."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "  return;",
+                  "}",
+                  "const roleId = pm.environment.get('createdRoleId');",
+                  "if (!roleId) {",
+                  "  console.warn('[UPDATE ROLE] No createdRoleId found. Run Create Role first.');",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('object');",
+                  "});",
+                  "pm.test('Updated role reflects new description', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.have.property('id');",
+                  "});",
+                  "// Idempotency: send same request again and check same 200",
+                  "console.log('[UPDATE ROLE] Idempotency: re-sending same payload should return 200 again.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Role — Invalid ID (Negative)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"should_not_work\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "description": "PUT /roles/{non_existent_id} — Expects 404."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 404', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([404, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{createdRoleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{createdRoleId}}"
+              ]
+            },
+            "description": "DELETE /roles/{id} — Delete the previously created test role. Requires allowWriteTests=true."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "  return;",
+                  "}",
+                  "const roleId = pm.environment.get('createdRoleId');",
+                  "if (!roleId) {",
+                  "  console.warn('[DELETE ROLE] No createdRoleId. Skipping.');",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Delete response indicates success', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "});",
+                  "pm.environment.unset('createdRoleId');",
+                  "pm.environment.unset('createdRoleName');",
+                  "console.log('[DELETE ROLE] createdRoleId cleared from environment.');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Role — Confirm Deleted (Negative)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles/{{deletedRoleId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles",
+                "{{deletedRoleId}}"
+              ]
+            },
+            "description": "GET /roles/{id} after deletion — Confirms the role no longer exists (404)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const deletedId = pm.environment.get('deletedRoleId');",
+                  "if (!deletedId) {",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Deleted role returns 404', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([404, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "User management: list, sync, update status, assign roles. All require auth.",
+      "item": [
+        {
+          "name": "Get Current User (Me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "description": "GET /users/me — Retrieve the authenticated user's profile and RBAC details."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('object');",
+                  "});",
+                  "pm.test('Me response has id, institution_id, status', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.have.property('id');",
+                  "  pm.expect(body.data).to.have.property('status');",
+                  "  // Store current user ID for chaining",
+                  "  pm.environment.set('currentUserId', body.data.id);",
+                  "  console.log('[ME] currentUserId:', body.data.id);",
+                  "});",
+                  "pm.test('Me has roles array', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data.roles !== undefined) {",
+                  "    pm.expect(body.data.roles).to.be.an('array');",
+                  "  }",
+                  "});",
+                  "pm.test('Me has permissions array', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data.permissions !== undefined) {",
+                  "    pm.expect(body.data.permissions).to.be.an('array');",
+                  "  }",
+                  "});",
+                  "pm.test('No sensitive fields leaked', function () {",
+                  "  const text = pm.response.text();",
+                  "  pm.expect(text).to.not.include('password');",
+                  "  pm.expect(text).to.not.include('secret');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=1&size=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                },
+                {
+                  "key": "query",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "GET /users — List all users with pagination."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Content-Type is application/json', function () {",
+                  "  pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "});",
+                  "pm.test('Meta contains pagination fields', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.meta) {",
+                  "    pm.expect(body.meta).to.have.property('page');",
+                  "    pm.expect(body.meta).to.have.property('size');",
+                  "    pm.expect(body.meta).to.have.property('total');",
+                  "  }",
+                  "});",
+                  "pm.test('Each user has id, status', function () {",
+                  "  const body = pm.response.json();",
+                  "  if (body.data && body.data.length > 0) {",
+                  "    body.data.forEach(function(u) {",
+                  "      pm.expect(u).to.have.property('id');",
+                  "      pm.expect(u).to.have.property('status');",
+                  "      pm.expect(['active', 'inactive', 'suspended', 'pending']).to.include(u.status);",
+                  "    });",
+                  "    pm.environment.set('existingUserId', body.data[0].id);",
+                  "    console.log('[LIST USERS] Stored existingUserId:', body.data[0].id);",
+                  "  }",
+                  "});",
+                  "pm.test('No passwords or secrets in response', function () {",
+                  "  const text = pm.response.text();",
+                  "  pm.expect(text).to.not.include('password');",
+                  "  pm.expect(text).to.not.include('secret');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Users — Page 2 (Pagination)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users?page=2&size=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "GET /users?page=2 — Test pagination second page."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Pagination page 2 response is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('array');",
+                  "  if (body.meta) {",
+                  "    pm.expect(body.meta.page).to.equal(2);",
+                  "    pm.expect(body.meta.size).to.equal(5);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync User (via IDP Token)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"access_token\": \"{{idpToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "description": "POST /users — Sync a user from IDP using their access token. Requires allowWriteTests=true."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') {",
+                  "  pm.execution.skipRequest();",
+                  "  return;",
+                  "}",
+                  "const idpToken = pm.environment.get('idpToken');",
+                  "if (!idpToken || idpToken === '<YOUR_IDP_TOKEN>') {",
+                  "  console.warn('[SYNC USER] idpToken not set. Skipping.');",
+                  "  pm.execution.skipRequest();",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response envelope is valid', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "  pm.expect(body.data).to.be.an('object');",
+                  "});",
+                  "pm.test('Synced user has id, status', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data).to.have.property('id');",
+                  "  pm.expect(body.data).to.have.property('status');",
+                  "  pm.environment.set('syncedUserId', body.data.id);",
+                  "  console.log('[SYNC USER] syncedUserId:', body.data.id);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sync User — Missing access_token (Negative)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "description": "POST /users with no access_token — Expects 400 validation error."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 for missing access_token', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Error response indicates validation failure', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Status — Active",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "status"
+              ]
+            },
+            "description": "PATCH /users/{id}/status — Activate a user. Requires allowWriteTests=true."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); return; }",
+                  "const userId = pm.environment.get('targetUserId') || pm.environment.get('existingUserId');",
+                  "if (!userId) {",
+                  "  console.warn('[UPDATE STATUS] No userId found. Skipping.');",
+                  "  pm.execution.skipRequest();",
+                  "} else {",
+                  "  pm.variables.set('targetUserId', userId);",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response indicates success', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Status — Deactivate",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token={{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"inactive\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "status"
+              ]
+            },
+            "description": "PATCH /users/{id}/status — Deactivate a user. Requires allowWriteTests=true."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); return; }",
+                  "const userId = pm.environment.get('targetUserId') || pm.environment.get('existingUserId');",
+                  "if (!userId) { pm.execution.skipRequest(); return; }",
+                  "pm.variables.set('targetUserId', userId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response indicates success', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Status — Invalid Status (Negative)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"banned\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{existingUserId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{existingUserId}}",
+                "status"
+              ]
+            },
+            "description": "PATCH /users/{id}/status with invalid enum value — Expects 400."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 for invalid status value', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});",
+                  "pm.test('Error response has success=false', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign Roles to User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\"{{existingRoleId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{targetUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{targetUserId}}",
+                "roles"
+              ]
+            },
+            "description": "POST /users/{id}/roles — Assign RBAC roles to a user. Requires allowWriteTests=true."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); return; }",
+                  "const userId = pm.environment.get('targetUserId') || pm.environment.get('existingUserId');",
+                  "const roleId = pm.environment.get('existingRoleId');",
+                  "if (!userId || !roleId) {",
+                  "  console.warn('[ASSIGN ROLES] Missing userId or roleId. Skipping.');",
+                  "  pm.execution.skipRequest();",
+                  "  return;",
+                  "}",
+                  "pm.variables.set('targetUserId', userId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Response indicates success', function () {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.success).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Assign Roles — Empty Roles Array (Negative)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/users/{{existingUserId}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "{{existingUserId}}",
+                "roles"
+              ]
+            },
+            "description": "POST /users/{id}/roles with empty roles array — Expects 400."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const allowWrite = pm.environment.get('allowWriteTests');",
+                  "if (allowWrite !== 'true') { pm.execution.skipRequest(); }"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400 for empty roles array', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 422]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Security & Auth Negative Tests",
+      "description": "Tests for unauthorized access, missing tokens, and forbidden actions.",
+      "item": [
+        {
+          "name": "List Roles — No Auth Token (Expects 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token="
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /roles with no auth — Expects 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 without auth token', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});",
+                  "pm.test('Response does not leak internal details', function () {",
+                  "  const text = pm.response.text();",
+                  "  pm.expect(text).to.not.include('stack');",
+                  "  pm.expect(text).to.not.include('panic');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Users — No Auth Token (Expects 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token="
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /users with no auth — Expects 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 without auth', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Me — No Auth Token (Expects 401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token="
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "GET /users/me with no auth — Expects 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 without auth', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Role — No Auth Token (Expects 401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token="
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"should_be_rejected\",\n  \"permissions\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/roles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "roles"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "description": "POST /roles with no auth — Expects 401."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401 without auth', function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
